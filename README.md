@@ -1,67 +1,16 @@
 Official code and data repository of [_**ADBench**: Anomaly Detection Benchmark_](https://arxiv.org/abs/2206.09426) (NeurIPS 2022).
-__Please star, watch, and fork ADBench for the active updates!__
 
-## Recent News:
-- ADBench has received 600+⭐ in github and released an official Python package📦 for a better user experience! Thank you all for your attention.
-
-
-## Citing ADBench:
-Our ADBench benchmark paper is now available on [arxiv](https://arxiv.org/abs/2206.09426) and [NeurIPS Proceedings](https://proceedings.neurips.cc/paper_files/paper/2022/hash/cf93972b116ca5268827d575f2cc226b-Abstract-Datasets_and_Benchmarks.html).
-If you find this work useful or use some our released datasets, we would appreciate citations to the following paper:
-```
-@inproceedings{han2022adbench,  
-      title={ADBench: Anomaly Detection Benchmark},   
-      author={Songqiao Han and Xiyang Hu and Hailiang Huang and Mingqi Jiang and Yue Zhao},  
-      booktitle={Neural Information Processing Systems (NeurIPS)}
-      year={2022},  
-}
-```
 
 ****
 
-## Who Are We? ✨
 
-ADBench is a collaborative effort between researchers at _Shanghai University of Finance and Economics (SUFE)_ and _Carnegie Mellon University (CMU)_. 
-The project is designed and conducted by [Minqi Jiang (SUFE)](https://github.com/Minqi824) and [Yue Zhao (CMU)](https://github.com/yzhao062), and [Xiyang Hu (CMU)](https://github.com/xiyanghu) --the author(s) of important anomaly detection libraries, including anomaly detection for tabular ([PyOD](https://github.com/yzhao062/pyod)), time-series ([TODS](https://github.com/datamllab/tods)), and graph data ([PyGOD](https://github.com/pygod-team/pygod)). 
-The project is also maintained by [Chaochuan Hou (SUFE)](https://github.com/BraudoCC).
-
-<a href="https://github.com/Minqi824/ADBench/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=Minqi824/ADBench" />
-</a>
-
-
-## Why Do You Need ADBench?
-
-ADBench is (to our best knowledge) **the most comprehensive tabular anomaly detection benchmark**, where we analyze the performance of **30** anomaly detection algorithms on [**57 datasets**](#datasets) (where we introduced 10 new datasets). By analyzing both research needs and deployment requirements in industry,
-ADBench conducts 98,436 experiments with three major angles:
- 1. **the effect of supervision** (e.g., ground truth labels) 
-by including 14 unsupervised, 7 semi-supervised, and 9 supervised methods;
- 2. **algorithm performance under different types of anomalies** by 
-simulating the environments with 4 types of anomalies; and
- 3. **algorithm robustness and stability** under 3 settings of data corruptions. 
-
-**Key Takeaways in 1 Minute**:
-1. :bangbang: surprisingly none of the benchmarked unsupervised algorithms is statistically better than others, emphasizing the importance of algorithm selection;
-2. :bangbang: with merely 1% labeled anomalies, most semi-supervised methods can outperform the best unsupervised method, justifying the importance of supervision;
-3. in controlled environments, we observe that best unsupervised methods for specific types of anomalies are even better than semi- and fully-supervised methods, revealing the necessity of understanding data characteristics;
-4. semi-supervised methods show potential in achieving robustness in noisy and corrupted data, possibly due to their efficiency in using labels and feature selection;
-5. :interrobang: and many more can be found in our papers (Section 4)
-
-The Figure below provides an overview of our proposed ADBench (see our [paper](https://arxiv.org/abs/2206.09426) for details).
+##  papers (Section 4)
 
 ![ADBench](figs/ADBenchV2.png)
 
 ----
 
 ## How to use ADBench?
-
-We envision three primary usages of ADBench:
-
-- **Have better understanding of anomaly detection algorithms**: please read our [paper](https://arxiv.org/abs/2206.09426) for details.
-- **Conduct future research on anomaly detection**: we list 4 important future research questions in the paper--see Section 4 to see some thoughts!
-- **Access rich algorithm implementation and datasets**: see details below for how to use them
-- **Benchmark your anomaly detection algorithms**: see [notebook](guidance.ipynb) for instruction.
-
 
 [comment]: <> (### Dependency)
 
