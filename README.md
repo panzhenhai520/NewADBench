@@ -5,9 +5,9 @@ Code URL:  https://github.com/Minqi824/ADBench?tab=readme-ov-file#readme
 
 ADBench is designed as a module, with the calling method being：
 ```python
-   from adbench.run import RunPipeline
-   pipeline = RunPipeline(suffix='ADBench', parallel='supervise', realistic_synthetic_mode=None, noise_type='irrelevant_features')
-   results = pipeline.run()
+from adbench.run import RunPipeline
+pipeline = RunPipeline(suffix='ADBench', parallel='supervise', realistic_synthetic_mode=None, noise_type='irrelevant_features')
+results = pipeline.run()
 ```  
 This code is in My_Anomaly.py ,can be run directly.
 ****
@@ -45,20 +45,20 @@ newADBench 是PolyU COMP5121 的一个实验项目，我们对ADBench论文代�
 
 2.2 修改supervised 类：定义pytorch模型需要传入张量, 为了保持原有程序代码的结构，supervised需要新增输入参数Pdata，另外，为了在model_dict 中用ModelFactory创建模型，还需要使用lambda 匿名函数定义ModelFactory闭包，用于动态创建模型实例。如下所示，字典中lambda开头的算法就是新增的算法:
 ```python
-        self.model_dict = {'LR':LogisticRegression,
-                           'NB':GaussianNB,
-                           'SVM':SVC,
-                           'MLP':MLPClassifier,
-                           'RF':RandomForestClassifier,
-                           'LGB':lgb.LGBMClassifier,
-                           'XGB':xgb.XGBClassifier,
-                           'CatB':CatBoostClassifier,
-                           'Pytorch_LSTM': lambda: ModelFactory(self.model_name, 'LSTM', self.epochs, self.PData).get_model(),
-                           'Pytorch_GRU': lambda: ModelFactory(self.model_name, 'GRU', self.epochs, self.PData).get_model(),
-                           'keras_lstm_model': lambda: ModelFactory(self.model_name, None, self.epochs, self.PData).get_model(),
-                           'SVM_model': lambda: ModelFactory(self.model_name, None, self.epochs, self.PData).get_model(),
-                           'RandomForest_model': lambda: ModelFactory(self.model_name, None, self.epochs, self.PData).get_model()
-                           }
+self.model_dict = {'LR':LogisticRegression,
+                   'NB':GaussianNB,
+                   'SVM':SVC,
+                   'MLP':MLPClassifier,
+                   'RF':RandomForestClassifier,
+                   'LGB':lgb.LGBMClassifier,
+                   'XGB':xgb.XGBClassifier,
+                   'CatB':CatBoostClassifier,
+                   'Pytorch_LSTM': lambda: ModelFactory(self.model_name, 'LSTM', self.epochs, self.PData).get_model(),
+                   'Pytorch_GRU': lambda: ModelFactory(self.model_name, 'GRU', self.epochs, self.PData).get_model(),
+                   'keras_lstm_model': lambda: ModelFactory(self.model_name, None, self.epochs, self.PData).get_model(),
+                   'SVM_model': lambda: ModelFactory(self.model_name, None, self.epochs, self.PData).get_model(),
+                   'RandomForest_model': lambda: ModelFactory(self.model_name, None, self.epochs, self.PData).get_model()
+                   }
  ```
 2.3 在supervised 类中新增了五种自定义模型对应的训练方法 model_flt() 和模型评估方法 model_performance()
 
@@ -72,23 +72,20 @@ newADBench 是PolyU COMP5121 的一个实验项目，我们对ADBench论文代�
 
 3.4 修改 RunPipeline 类的run方法，在噪音数据产生之后，实例化PytrochData类 =PData,用于pytorch模型创建时的输入，并且在通过model_dict 字典进行循环时，通过model_name 判断，新增一个分支，用于创建我们自定义的模型，然后调用model_flt方法训练，调用model_performance方法评估。如下所示: # new model added 部分就是新增模型及训练，而# fit and test model 部分是原来的模型：
 ```python
-        
-        if self.model_name in ['Pytorch_LSTM','Pytorch_GRU','keras_lstm_model','SVM_model','RandomForest_model']:
-            # new model added
-            self.clf = self.clf(seed=self.seed, model_name=self.model_name, PData= PData)
-            self.clf.model_flt()
-            metrics=self.clf.model_performance()
-            time_fit=self.clf.time_fit
-            time_inference=self.clf.time_inference
-        else:
-            # fit and test model
-            time_fit, time_inference, metrics = self.model_fit()
-            results.append([params, model_name, metrics, time_fit, time_inference])
-            print(f'Current experiment parameters: {params}, model: {model_name}, metrics: {metrics}, '
-            f'fitting time: {time_fit}, inference time: {time_inference}')
-
+if self.model_name in ['Pytorch_LSTM','Pytorch_GRU','keras_lstm_model','SVM_model','RandomForest_model']:
+   # new model added
+   self.clf = self.clf(seed=self.seed, model_name=self.model_name, PData= PData)
+   self.clf.model_flt()
+   metrics=self.clf.model_performance()
+   time_fit=self.clf.time_fit
+   time_inference=self.clf.time_inference
+else:
+   # fit and test model
+   time_fit, time_inference, metrics = self.model_fit()
+   results.append([params, model_name, metrics, time_fit, time_inference])
+   print(f'Current experiment parameters: {params}, model: {model_name}, metrics: {metrics}, '
+   f'fitting time: {time_fit}, inference time: {time_inference}')
 ```
-
 
 经过上述修改，newADBench项目在ADBench代码基础上，保持原有结构和输出方式，实现了新增5种算法和原论文算法对比的实验要求。
 ### 总结：
