@@ -7,19 +7,16 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 from itertools import combinations
 from sklearn.mixture import GaussianMixture
-
 from copulas.multivariate import VineCopula
 from copulas.univariate import GaussianKDE
-
 from adbench.myutils import Utils
-
 from sklearn.metrics import roc_auc_score, average_precision_score
+
+# add metric for newModel
 def metric(self, y_true, y_score, pos_label=1):
     aucroc = roc_auc_score(y_true=y_true, y_score=y_score)
     aucpr = average_precision_score(y_true=y_true, y_score=y_score, pos_label=1)
     return {'aucroc': aucroc, 'aucpr': aucpr}
-
-
 
 # currently, data generator only supports for generating the binary classification datasets
 class DataGenerator():
@@ -48,8 +45,6 @@ class DataGenerator():
 
     def generate_dataset_list(self):
         # classical AD datasets
-        # 取得当前执行程序的绝对路径：os.path.abspath(__file__)
-        # 指定数据集在文件夹Classical 下
         dataset_list_classical = [os.path.splitext(_)[0] for _ in
                                   os.listdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Classical'))
                                   if os.path.splitext(_)[1] == '.npz']
@@ -64,7 +59,6 @@ class DataGenerator():
 
         return dataset_list_classical, dataset_list_cv, dataset_list_nlp
 
-        #return dataset_list_classical
 
     def generate_realistic_synthetic(self, X, y, realistic_synthetic_mode, alpha:int, percentage:float):
         '''

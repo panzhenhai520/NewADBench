@@ -8,13 +8,13 @@ import time
 import gc
 import os
 from keras import backend as K
-
 from adbench.datasets.data_generator import DataGenerator
 from adbench.myutils import Utils
 
+# add new model for pytorch
 import torch
 from torch.utils.data import DataLoader, TensorDataset
-
+# add new model for pytorch
 def get_pdevice(gpu_specific=False, Showinfo=False):
     if gpu_specific:
         if torch.cuda.is_available():
@@ -30,8 +30,7 @@ def get_pdevice(gpu_specific=False, Showinfo=False):
     else:
         device = torch.device("cpu")
     return device
-
-
+# add new model for pytorch
 class PytrochData(object):
     # 把数据处理成 Pytroch 需要的张量形式
     def __init__(self, X_train, y_train, X_test, y_test,epochs):
