@@ -1,276 +1,99 @@
+##  Papers 
 Official code and data repository of [_**ADBench**: Anomaly Detection Benchmark_](https://arxiv.org/abs/2206.09426) (NeurIPS 2022).
 
+Code URL:  https://github.com/Minqi824/ADBench?tab=readme-ov-file#readme
 
+ADBench is designed as a module, with the calling method being：
+```python
+   from adbench.run import RunPipeline
+   pipeline = RunPipeline(suffix='ADBench', parallel='supervise', realistic_synthetic_mode=None, noise_type='irrelevant_features')
+   results = pipeline.run()
+```  
+This code is in My_Anomaly.py ,can be run directly.
 ****
 
 
-##  papers (Section 4)
+### Algorithms
 
-![ADBench](figs/ADBenchV2.png)
+The Figure below shows the algorithms (14 unsupervised, 7 semi-supervised, and 9 supervised algorithms) in ADBench.
 
+![Algorithms](figs/Algorithms.png)
+
+#### 新增:
+#### Pytorch_LSTM, Pytorch_GRU, Keras_LSTM ，SVM_model（不同参数）,RandomForeast_model（不同参数）
 ----
 
-## How to use ADBench?
+### 环境:
+Python3.7.16, Pytorch 1.13, Pytorch-cuda 11.7 Tensorflow2.11, Keras 2.11.0,Numpy 1.21.5 ,Pandas1.3.5 ,Matplotlib3.53 Tqdm4.66.2
 
-[comment]: <> (### Dependency)
+### 修改说明：
+newADBench 是PolyU COMP5121 的一个实验项目，我们对ADBench论文代码做了如下改动：
 
-[comment]: <> (The experiment code is written in Python 3 and built on a number of Python packages:  )
-
-[comment]: <> (- scikit-learn==0.20.3)
-
-[comment]: <> (- pyod==1.0.0)
-
-[comment]: <> (- torch==1.9.0)
-
-[comment]: <> (- rtdl==0.0.13)
-
-[comment]: <> (- keras)
-
-[comment]: <> (- tensorflow)
-
-[comment]: <> (- delu)
-
-[comment]: <> (- lightgbm)
-
-[comment]: <> (- xgboost)
-
-[comment]: <> (- catboost )
-
-[comment]: <> (- copulas)
-
-[comment]: <> (- combo)
-
-[comment]: <> (- barbar)
-
-We provide full guidance of ADBench in the [notebook](guidance.ipynb).
-### Installation
-```python
-pip install adbench
-pip install --upgrade adbench
-```
-
-_Prerequisite: Downloading datasets in ADBench from the github repo_
-```python
-from adbench.myutils import Utils
-utils = Utils() # utility function
-# download datasets from the remote github repo
-# we recommend jihulab for China mainland user and github otherwise
-utils.download_datasets(repo='jihulab')
-```
-
-### Quickly implement ADBench for benchmarking AD algorithms.
-We present the following example for quickly implementing ADBench in _three different Angles_ illustrated
-in the paper. Currently, [57 datasets](#datasets) can be used for evaluating [30 algorithms](#algorithms) in ADBench,
-and we encourage to test your customized datasets/algorithms in our ADBench testbed.
-
-
-**_Run Entire Experiments of ADBench_**
-
-```python
-from adbench.run import RunPipeline
-
-'''
-Params:
-suffix: file name suffix;
-
-parallel: running either 'unsupervise', 'semi-supervise', or 'supervise' (AD) algorithms,
-corresponding to the Angle I: Availability of Ground Truth Labels (Supervision);
-
-realistic_synthetic_mode: testing on 'local', 'global', 'dependency', and 'cluster' anomalies, 
-corresponding to the Angle II: Types of Anomalies;
-
-noise type: evaluating algorithms on 'duplicated_anomalies', 'irrelevant_features' and 'label_contamination',
-corresponding to the Angle III: Model Robustness with Noisy and Corrupted Data.
-'''
-
-# return the results including [params, model_name, metrics, time_fit, time_inference]
-# besides, results will be automatically saved in the dataframe and ouputted as csv file in adbench/result folder
-pipeline = RunPipeline(suffix='ADBench', parallel='semi-supervise', realistic_synthetic_mode=None, noise_type=None)
-results = pipeline.run()
-
-pipeline = RunPipeline(suffix='ADBench', parallel='unsupervise', realistic_synthetic_mode='cluster', noise_type=None)
-results = pipeline.run()
-
-pipeline = RunPipeline(suffix='ADBench', parallel='supervise', realistic_synthetic_mode=None, noise_type='irrelevant_features')
-results = pipeline.run()
-```
-
-**_Run Your Customized Algorithms on either ADBench Datasets or Your Customized Dataset_**
-```python
-# customized model on ADBench's datasets
-from adbench.run import RunPipeline
-from adbench.baseline.Customized.run import Customized
-
-# notice that you should specify the corresponding category of your customized AD algorithm
-# for example, here we use Logistic Regression as customized clf, which belongs to the supervised algorithm
-# for your own algorithm, you can realize the same usage as other baselines by modifying the fit.py, model.py, and run.py files in the adbench/baseline/Customized
-pipeline = RunPipeline(suffix='ADBench', parallel='supervise', realistic_synthetic_mode=None, noise_type=None)
-results = pipeline.run(clf=Customized)
-
-# customized model on customized dataset
-import numpy as np
-dataset = {}
-dataset['X'] = np.random.randn(1000, 20)
-dataset['y'] = np.random.choice([0, 1], 1000)
-results = pipeline.run(dataset=dataset, clf=Customized)
-```
-
-See detailed guidance of ADBench in the [notebook](guidance.ipynb).
-
-### Datasets
-ADBench includes [57 datasets](https://github.com/Minqi824/ADBench/tree/main/datasets), as shown in the following Table. 
-
-- Among them, **47 widely-used real-world datasets** are gathered for model evaluation, which cover many application domains, 
-including healthcare (e.g., disease diagnosis), 
-audio and language processing (e.g., speech recognition), 
-image processing (e.g., object identification), 
-finance (e.g., financial fraud detection), etc.  
-
-- we introduce **10 more complex datasets** from CV and NLP domains with more samples and richer features in ADBench.
-Pretrained models are applied to extract data embedding from NLP and CV datasets to access more complex representation.
-Please see the [datasets](datasets) folder and our [paper]((https://arxiv.org/abs/2206.09426)) for detailed information.
-
-- We organize the above 57 datasets into user-friendly format. All the datasets are named as "number_data.npz" in the
-[datasets](datasets) folder. For example, one can evaluate AD algorithms on the cardio dataset by the following codes.
-For multi-class dataset like CIFAR10, additional class numbers should be specified as "number_data_class.npz".
-Please see the folder for more details.
-
-- We provide the data processing code [for NLP datasets](https://colab.research.google.com/drive/1uMr_5jIqrlP1UL1SlBm7cdO7fmDaEamB?usp=sharing)
-and [for CV datasets](https://colab.research.google.com/drive/1tB90CB-BuKDOM3WYV75-WkK6xrMQxQ5M?usp=sharing)
-in **Google Colab**, where one can quickly
-reproduce our procedures via the free GPUs. We hope this could be helpful for the AD community.
-
-We have unified all the datasets in .npz format, and you can directly access a dataset by the following script
-
-```python
-import numpy as np
-data = np.load('adbench/datasets/Classical/6_cardio.npz', allow_pickle=True)
-X, y = data['X'], data['y']
-```
+一、为尽快呈现实验结果，只加载dataset_list_classical类的数据，不加载dataset_list_cv, dataset_list_nlp 类型数据，且对classical数据进行筛选，只选择了以下三个数据集进行实验：
 
 | Number | Data | # Samples | # Features | # Anomaly | % Anomaly | Category |
 |:--:|:---:|:---------:|:----------:|:---------:|:---------:|:---:|
-|1| ALOI                    |   49534   |     27     |   1508    |   3.04    |     Image     |
-|2| annthyroid   |   7200    |     6      |    534    |   7.42    |      Healthcare    |
 |3| backdoor|   95329   |    196     |   2329    |   2.44    | Network|
-|4| breastw                              |    683    |     9      |    239    |   34.99   | Healthcare  |
-|5|campaign|   41188   |     62     |   4640    |   11.27   | Finance|
-|6| cardio                               |   1831    |     21     |    176    |   9.61    | Healthcare |        
-|7| Cardiotocography    |   2114    |     21     |    466    |   22.04   | Healthcare         |
-|8|celeba|  202599   |     39     |   4547    |   2.24    | Image|
 |9|census|  299285   |    500     |   18568   |   6.20    | Sociology|
-|10| cover                                |  286048   |     10     |   2747    |   0.96    | Botany    | 
-|11|donors|  619326   |     10     |   36710   |   5.93    | Sociology|
-|12| fault                      |   1941    |     27     |    673    |   34.67   | Physical         |
-|13|fraud|  284807   |     29     |    492    |   0.17    | Finance|
-|14| glass |    214    |     7      |     9     |   4.21    | Forensic          |
-|15| Hepatitis           |    80     |     19     |    13     |   16.25   | Healthcare         |
-|16| http                                 |  567498   |     3      |   2211    |   0.39    | Web   |      
-|17| InternetAds   |   1966    |    1555    |    368    |   18.72   | Image         |
-|18| Ionosphere        |    351    |     32     |    126    |   35.90   | Oryctognosy         |
-|19| landsat                         |   6435    |     36     |   1333    |   20.71   | Astronautics    |     
-|20| letter                               |   1600    |     32     |    100    |   6.25    | Image     |    
-|21| Lymphography       |    148    |     18     |     6     |   4.05    | Healthcare       |  
-|22| magic.gamma                     |   19020   |     10     |   6688    |   35.16   | Physical        | 
-|23| mammography                          |   11183   |     6      |    260    |   2.32    | Healthcare  |       
-|24| mnist                                |   7603    |    100     |    700    |   9.21    | Image      |   
 |25| musk                                 |   3062    |    166     |    97     |   3.17    | Chemistry   |      
-|26| optdigits                            |   5216    |     64     |    150    |   2.88    | Image     |    
-|27| PageBlocks         |   5393    |     10     |    510    |   9.46    | Document         |
-|28| pendigits                            |   6870    |     16     |    156    |   2.27    | Image        | 
-|29| Pima                |    768    |     8      |    268    |   34.90   | Healthcare         |
-|30| satellite                            |   6435    |     36     |   2036    |   31.64   | Astronautics     |    
-|31| satimage-2                           |   5803    |     36     |    71     |   1.22    | Astronautics    |     
-|32| shuttle                              |   49097   |     9      |   3511    |   7.15    | Astronautics  |       
-|33| skin                            |  245057   |     3      |   50859   |   20.75   |    Image      |
-|34| smtp                                 |   95156   |     3      |    30     |   0.03    | Web        | 
-|35| SpamBase            |   4207    |     57     |   1679    |   39.91   | Document         |
-|36| speech                               |   3686    |    400     |    61     |   1.65    | Linguistics    |     
-|37| Stamps              |    340    |     9      |    31     |   9.12    | Document         |
-|38| thyroid                              |   3772    |     6      |    93     |   2.47    | Healthcare      |   
-|39| vertebral                            |    240    |     6      |    30     |   12.50   | Biology       |  
-|40| vowels                               |   1456    |     12     |    50     |   3.43    | Linguistics  |       
-|41| Waveform           |   3443    |     21     |    100    |   2.90    | Physics         |
-|42| WBC                |    223    |     9      |    10     |   4.48    | Healthcare         |
-|43| WDBC               |    367    |     30     |    10     |   2.72    | Healthcare         |
-|44| Wilt                |   4819    |     5      |    257    |   5.33    | Botany         |
-|45| wine                                 |    129    |     13     |    10     |   7.75    | Chemistry   |      
-|46| WPBC             |    198    |     33     |    47     |   23.74   | Healthcare   |      
-|47| yeast                           |   1484    |     8      |    507    |   34.16   | Biology|
-|48| CIFAR10| 5263 |    512    |    263     |   5.00    |   Image   |
-|49| FashionMNIST| 6315|    512    |    315     |   5.00    |   Image   |
-|50| MNIST-C| 10000|    512    |    500     |   5.00    |   Image   |
-|51| MVTec-AD| See Table B2. |       |          |       |   Image   |
-|52| SVHN| 5208 |512| 260 |5.00 |Image |
-|53| Agnews| 10000 |768 |500 |5.00| NLP |
-|54| Amazon| 10000 |768| 500 |5.00| NLP |
-|55| Imdb| 10000| 768| 500 |5.00 |NLP |
-|56| Yelp| 10000| 768| 500 |5.00| NLP |
-|57| 20newsgroups| See Table B3. |     |          |       |   NLP   |
 
-### Algorithms
-ADBench can be served as a great complement to the [PyOD](https://pyod.readthedocs.io/en/latest/) toolkit,
-providing **additional deep learning anomaly detection algorithms API**.
-Compared to the previous benchmark studies, we have a larger algorithm collection with
-1. latest unsupervised AD algorithms like DeepSVDD and ECOD;
-2. SOTA semi-supervised algorithms, including DeepSAD and DevNet;
-3. latest network architectures like ResNet in computer vision (CV) and Transformer in natural language processing (NLP) domain
----we adapt ResNet and FTTransformer models for tabular AD in the proposed ADBench; and
-4. ensemble learning methods like LightGBM, XGBoost, and CatBoost.
-The Figure below shows the algorithms (14 unsupervised, 7 semi-supervised, and 9 supervised algorithms) in ADBench.
-![Algorithms](figs/Algorithms.png)
+只定义一种irrelevant_features噪声类型，加入0.1的噪声，使原数据集增加10%的无关联特征进行干扰。
 
-For each algorithm, we also introduce its specific implementation in the following Table.
-The only thing worth noting is that model name should be specified 
-(especially for those models deployed by their corresponding package, e.g., [PyOD](https://github.com/yzhao062/pyod)). 
-The following codes show the example to import AD models. 
-Please see the Table for complete AD models included in ADBench and their import methods.
+二、修改baseline包中的Supervised模块：
 
+2.1 新定义一个模型工厂类：Class ModelFactory, 并定义get_model 方法，根据 model_name 分别创建 Pytorch_LSTM, Pytorch_GRU,keras_lstm_model、SVM_model、RandomForest_model 这五种我们自定义的模型，为了和ADBench 中原来的SVM,和RF两种算法对比， 我们自己定义的SVM_model 和 RandomForest_model 选择了不同的参数.
+
+2.2 修改supervised 类：定义pytorch模型需要传入张量, 为了保持原有程序代码的结构，supervised需要新增输入参数Pdata，另外，为了在model_dict 中用ModelFactory创建模型，还需要使用lambda 匿名函数定义ModelFactory闭包，用于动态创建模型实例。如下所示，字典中lambda开头的算法就是新增的算法:
 ```python
-# Directly import AD algorithms from the existing toolkits like PyOD
-from adbench.baseline.PyOD import PYOD
-model = PYOD(seed=42, model_name='XGBOD')  # initialization
-model.fit(X_train, y_train)  # fit
-score = model.predict_score(X_test)  # predict
+        self.model_dict = {'LR':LogisticRegression,
+                           'NB':GaussianNB,
+                           'SVM':SVC,
+                           'MLP':MLPClassifier,
+                           'RF':RandomForestClassifier,
+                           'LGB':lgb.LGBMClassifier,
+                           'XGB':xgb.XGBClassifier,
+                           'CatB':CatBoostClassifier,
+                           'Pytorch_LSTM': lambda: ModelFactory(self.model_name, 'LSTM', self.epochs, self.PData).get_model(),
+                           'Pytorch_GRU': lambda: ModelFactory(self.model_name, 'GRU', self.epochs, self.PData).get_model(),
+                           'keras_lstm_model': lambda: ModelFactory(self.model_name, None, self.epochs, self.PData).get_model(),
+                           'SVM_model': lambda: ModelFactory(self.model_name, None, self.epochs, self.PData).get_model(),
+                           'RandomForest_model': lambda: ModelFactory(self.model_name, None, self.epochs, self.PData).get_model()
+                           }
+ ```
+2.3 在supervised 类中新增了五种自定义模型对应的训练方法 model_flt() 和模型评估方法 model_performance()
 
-# Import deep learning AD algorithms from our ADBench
-from adbench.baseline.PReNet.run import PReNet
-model = PReNet(seed=42)
-model.fit(X_train, y_train)  # fit
-score = model.predict_score(X_test)  # predict
+三、修改ADBench包中的 run 模块：
+
+3.1 为Pytorch 模型增加检测GPU设备的方法 get_pdevice() 
+
+3.2 为Pytorch 模型增加张量处理的类：class PytrochData(object)
+
+3.3 修改 RunPipeline 类的初始化方法：当parallel=supervis模式时，在model_dict 列表中新增五种自定义的模型的名称
+
+3.4 修改 RunPipeline 类的run方法，在噪音数据产生之后，实例化PytrochData类 =PData,用于pytorch模型创建时的输入，并且在通过model_dict 字典进行循环时，通过model_name 判断，新增一个分支，用于创建我们自定义的模型，然后调用model_flt方法训练，调用model_performance方法评估。如下所示: # new model added 部分就是新增模型及训练，而# fit and test model 部分是原来的模型：
+```python
+        
+        if self.model_name in ['Pytorch_LSTM','Pytorch_GRU','keras_lstm_model','SVM_model','RandomForest_model']:
+            # new model added
+            self.clf = self.clf(seed=self.seed, model_name=self.model_name, PData= PData)
+            self.clf.model_flt()
+            metrics=self.clf.model_performance()
+            time_fit=self.clf.time_fit
+            time_inference=self.clf.time_inference
+        else:
+            # fit and test model
+            time_fit, time_inference, metrics = self.model_fit()
+            results.append([params, model_name, metrics, time_fit, time_inference])
+            print(f'Current experiment parameters: {params}, model: {model_name}, metrics: {metrics}, '
+            f'fitting time: {time_fit}, inference time: {time_inference}')
+
 ```
 
-|  Model  | Year | Type |  DL  |       Import       |  Source  |
-| :-----: | :--------: | :--: | :--: | :-----------------: | :------: |
-| [PCA](https://apps.dtic.mil/sti/pdfs/ADA465712.pdf) | Before 2017 | Unsup |  &cross;   | from adbench.baseline.PyOD import PYOD | [Link](https://pyod.readthedocs.io/en/latest/#) |
-| [OCSVM](https://proceedings.neurips.cc/paper/1999/file/8725fb777f25776ffa9076e44fcfd776-Paper.pdf) | Before 2017  | Unsup |  &cross;   | from adbench.baseline.PyOD import PYOD | [Link](https://pyod.readthedocs.io/en/latest/#) |
-| [LOF](https://dl.acm.org/doi/pdf/10.1145/342009.335388) | Before 2017  | Unsup |  &cross;   | from adbench.baseline.PyOD import PYOD | [Link](https://pyod.readthedocs.io/en/latest/#) |
-| [CBLOF](https://www.sciencedirect.com/science/article/abs/pii/S0167865503000035?casa_token=8zegN8osm64AAAAA:mf8lhwsCXHslgL8eYYJUSKJYgSiy42ibf6aMrP-zlaKE5tz_hiy63Olqv_NGAM7Gz21pjCTuMA) | Before 2017  | Unsup |  &cross;   | from adbench.baseline.PyOD import PYOD | [Link](https://pyod.readthedocs.io/en/latest/#) |
-| [COF](https://link.springer.com/chapter/10.1007/3-540-47887-6_53) | Before 2017  | Unsup |  &cross;   | from adbench.baseline.PyOD import PYOD | [Link](https://pyod.readthedocs.io/en/latest/#) |
-| [HBOS](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.401.5686&rep=rep1&type=pdf) | Before 2017  | Unsup |  &cross;   | from adbench.baseline.PyOD import PYOD | [Link](https://pyod.readthedocs.io/en/latest/#) |
-| [KNN](https://dl.acm.org/doi/pdf/10.1145/342009.335437) | Before 2017  | Unsup |  &cross;   | from adbench.baseline.PyOD import PYOD | [Link](https://pyod.readthedocs.io/en/latest/#) |
-| [SOD](https://www.dbs.ifi.lmu.de/~zimek/publications/PAKDD2009/pakdd09-SOD.pdf) | Before 2017  | Unsup |  &cross;   | from adbench.baseline.PyOD import PYOD | [Link](https://pyod.readthedocs.io/en/latest/#) |
-| [COPOD](https://arxiv.org/abs/2009.09463) | 2020  | Unsup |  &cross;   | from adbench.baseline.PyOD import PYOD | [Link](https://pyod.readthedocs.io/en/latest/#) |
-| [ECOD](https://arxiv.org/abs/2201.00382) | 2022  | Unsup |  &cross;   | from adbench.baseline.PyOD import PYOD | [Link](https://pyod.readthedocs.io/en/latest/#) |
-| [IForest†](https://cs.nju.edu.cn/zhouzh/zhouzh.files/publication/icdm08b.pdf?q=isolation-forest) | Before 2017  | Unsup |  &cross;   | from adbench.baseline.PyOD import PYOD | [Link](https://pyod.readthedocs.io/en/latest/#) |
-| [LODA†](https://link.springer.com/article/10.1007/s10994-015-5521-0) | Before 2017  | Unsup |  &cross;   | from adbench.baseline.PyOD import PYOD | [Link](https://pyod.readthedocs.io/en/latest/#) |
-| [DeepSVDD](http://proceedings.mlr.press/v80/ruff18a/ruff18a.pdf) | 2018  | Unsup |  &check;   | from adbench.baseline.PyOD import PYOD | [Link](https://pyod.readthedocs.io/en/latest/#) |
-| [DAGMM](https://openreview.net/forum?id=BJJLHbb0-) | 2018  | Unsup |  &check;   | from adbench.baseline.DAGMM.run import DAGMM | [Link](https://github.com/mperezcarrasco/PyTorch-DAGMM) |
-| [GANomaly](https://arxiv.org/abs/1805.06725) | 2018  | Semi |  &check;   | from adbench.baseline.GANomaly.run import GANomaly | [Link](https://github.com/samet-akcay/ganomaly) |
-| [XGBOD†](https://arxiv.org/abs/1912.00290) | 2018  | Semi |  &cross;   | from adbench.baseline.PyOD import PYOD | [Link](https://pyod.readthedocs.io/en/latest/#) |
-| [DeepSAD](https://arxiv.org/abs/1906.02694) | 2019  | Semi |  &check;   | from adbench.baseline.DeepSAD.src.run import DeepSAD | [Link](https://github.com/lukasruff/Deep-SAD-PyTorch) |
-| [REPEN](https://arxiv.org/abs/1806.04808) | 2018  | Semi |  &check;   | from adbench.baseline.REPEN.run import REPEN | [Link](https://github.com/GuansongPang/deep-outlier-detection) |
-| [DevNet](https://arxiv.org/abs/1911.08623) | 2019  | Semi |  &check;   | from adbench.baseline.DevNet.run import DevNet | [Link](https://github.com/GuansongPang/deviation-network) |
-| [PReNet](https://arxiv.org/abs/1910.13601) | 2020  | Semi |  &check;   | from adbench.baseline.PReNet.run import PReNet | / |
-| [FEAWAD](https://arxiv.org/abs/2105.10500) | 2021  | Semi |  &check;   | from adbench.baseline.FEAWAD.run import FEAWAD | [Link](https://github.com/yj-zhou/Feature_Encoding_with_AutoEncoders_for_Weakly-supervised_Anomaly_Detection/blob/main/FEAWAD.py) |
-| [NB](https://www.cs.unb.ca/~hzhang/publications/FLAIRS04ZhangH.pdf) | Before 2017  | Sup |  &cross;   | from adbench.baseline.Supervised import supervised | [Link](https://scikit-learn.org/stable/supervised_learning.html) |
-| [SVM](http://citeseer.ist.psu.edu/viewdoc/summary?doi=10.1.1.41.1639) | Before 2017  | Sup |  &cross;   | from adbench.baseline.Supervised import supervised | [Link](https://scikit-learn.org/stable/supervised_learning.html) |
-| [MLP](https://files.eric.ed.gov/fulltext/ED294889.pdf) | Before 2017  | Sup |  &check;   | from adbench.baseline.Supervised import supervised | [Link](https://scikit-learn.org/stable/supervised_learning.html) |
-| [RF†](https://www.stat.berkeley.edu/~breiman/randomforest2001.pdf) | Before 2017  | Sup |  &cross;   | from adbench.baseline.Supervised import supervised | [Link](https://scikit-learn.org/stable/supervised_learning.html) |
-| [LGB†](https://proceedings.neurips.cc/paper/2017/file/6449f44a102fde848669bdd9eb6b76fa-Paper.pdf) | 2017  | Supervised |  &cross;   | from adbench.baseline.Supervised import supervised | [Link](https://lightgbm.readthedocs.io/en/latest/) |
-| [XGB†](https://arxiv.org/abs/1603.02754) | Before 2017  | Sup |  &cross;   | from adbench.baseline.Supervised import supervised | [Link](https://catboost.ai/en/docs/) |
-| [CatB†](https://arxiv.org/pdf/1706.09516.pdf) | 2019  | Sup |  &cross;   | from adbench.baseline.Supervised import supervised | [Link](https://xgboost.readthedocs.io/en/stable/) |
-| [ResNet](https://arxiv.org/pdf/2106.11959.pdf) | 2019  | Sup |  &check;   | from adbench.baseline.FTTransformer.run import FTTransformer | [Link](https://yura52.github.io/rtdl/stable/index.html) |
-| [FTTransformer](https://arxiv.org/pdf/2106.11959.pdf) | 2019  | Sup |  &check;   | from adbench.baseline.FTTransformer.run import FTTransformer | [Link](https://yura52.github.io/rtdl/stable/index.html) |
-- '†' marks ensembling. This symbol is not included in the model name.
-- Un-, semi-, and fully-supervised methods are denoted as _unsup_, _semi_ and _sup_, respectively.
+
+经过上述修改，newADBench项目在ADBench代码基础上，保持原有结构和输出方式，实现了新增5种算法和原论文算法对比的实验要求。
+### 总结：
+1. ADBench代码完成机器学习后，会在result文件夹下生成四个csv文件，呈现3个数据集受到10%无关特征干扰的情况下10种算法的性能对比表，newADBench保持了相同的输出方式，把算法增加到15种.
+
+2. 多种算法模型在不同的数据集上的验证结果表明，并不存在能广泛适用于各种数据集的通用异常检测模型。针对不同类型的数据集应选择适应能力好的算法，而newADBench可以作为选择异常检测算法时的工具。
+
+3. SVM和随机森林虽然比较传统，但从几个数据集的测试效果看，其性能并不比采用神经网络构造的模型差.如果考虑训练时间的因素，甚至可以说SVM和随机森林算法在全监督的数据集上表现更好，这充分说明了数学算法的威力。
