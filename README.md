@@ -19,7 +19,7 @@ The Figure below shows the algorithms (14 unsupervised, 7 semi-supervised, and 9
 
 ![Algorithms](figs/Algorithms.png)
 
-#### Added::
+#### Added:
 #### Pytorch_LSTM, Pytorch_GRU, Keras_LSTM ，SVM_model （with different parameters）,RandomForeast_model（with different parameters）
 ----
 
