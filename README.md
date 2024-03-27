@@ -19,17 +19,17 @@ The Figure below shows the algorithms (14 unsupervised, 7 semi-supervised, and 9
 
 ![Algorithms](figs/Algorithms.png)
 
-#### 新增:
-#### Pytorch_LSTM, Pytorch_GRU, Keras_LSTM ，SVM_model（不同参数）,RandomForeast_model（不同参数）
+#### Added::
+#### Pytorch_LSTM, Pytorch_GRU, Keras_LSTM ，SVM_model （with different parameters）,RandomForeast_model（with different parameters）
 ----
 
-### 环境:
+### Environment:
 Python3.7.16, Pytorch 1.13, Pytorch-cuda 11.7 Tensorflow2.11, Keras 2.11.0,Numpy 1.21.5 ,Pandas1.3.5 ,Matplotlib3.53 Tqdm4.66.2
 
-### 修改说明：
-newADBench 是PolyU COMP5121 的一个实验项目，我们对ADBench论文代码做了如下改动：
+### Modification Description：
+newADBench is an experimental project for PolyU COMP5121. We have made the following changes to the ADBench paper code:
 
-一、为尽快呈现实验结果，只加载dataset_list_classical类的数据，不加载dataset_list_cv, dataset_list_nlp 类型数据，且对classical数据进行筛选，只选择了以下三个数据集进行实验：
+To quickly present experimental results, only data from the dataset_list_classical class is loaded, without loading data from the dataset_list_cv or dataset_list_nlp classes. Moreover, we have filtered the classical data, choosing only the following three datasets for experiments:
 
 | Number | Data | # Samples | # Features | # Anomaly | % Anomaly | Category |
 |:--:|:---:|:---------:|:----------:|:---------:|:---------:|:---:|
@@ -37,13 +37,13 @@ newADBench 是PolyU COMP5121 的一个实验项目，我们对ADBench论文代�
 |9|census|  299285   |    500     |   18568   |   6.20    | Sociology|
 |25| musk                                 |   3062    |    166     |    97     |   3.17    | Chemistry   |      
 
-只定义一种irrelevant_features噪声类型，加入0.1的噪声，使原数据集增加10%的无关联特征进行干扰。
+Only one type of irrelevant_features noise is defined, adding 0.1 noise to increase the original dataset by 10% with irrelevant features for interference.
 
-二、修改baseline包中的Supervised模块：
+Modification of the Supervised module in the baseline package:
 
-2.1 新定义一个模型工厂类：Class ModelFactory, 并定义get_model 方法，根据 model_name 分别创建 Pytorch_LSTM, Pytorch_GRU,keras_lstm_model、SVM_model、RandomForest_model 这五种我们自定义的模型，为了和ADBench 中原来的SVM,和RF两种算法对比， 我们自己定义的SVM_model 和 RandomForest_model 选择了不同的参数.
+2.1 A new model factory class is defined: Class ModelFactory, and a get_model method is defined to create five custom models based on model_name: Pytorch_LSTM, Pytorch_GRU, keras_lstm_model, SVM_model, and RandomForest_model. To compare with the original SVM and RF algorithms in ADBench, our own SVM_model and RandomForest_model chose different parameters.
 
-2.2 修改supervised 类：定义pytorch模型需要传入张量, 为了保持原有程序代码的结构，supervised需要新增输入参数Pdata，另外，为了在model_dict 中用ModelFactory创建模型，还需要使用lambda 匿名函数定义ModelFactory闭包，用于动态创建模型实例。如下所示，字典中lambda开头的算法就是新增的算法:
+2.2 Modification of the supervised class: Pytorch models require tensor input. To maintain the original code structure, supervised needs to add an input parameter Pdata. Additionally, to create models in model_dict using ModelFactory, a lambda anonymous function is used to define a ModelFactory closure for dynamically creating model instances. As shown below, the algorithms starting with lambda in the dictionary are the newly added algorithms:
 ```python
 self.model_dict = {'LR':LogisticRegression,
                    'NB':GaussianNB,
@@ -60,17 +60,17 @@ self.model_dict = {'LR':LogisticRegression,
                    'RandomForest_model': lambda: ModelFactory(self.model_name, None, self.epochs, self.PData).get_model()
                    }
  ```
-2.3 在supervised 类中新增了五种自定义模型对应的训练方法 model_flt() 和模型评估方法 model_performance()
+2.3 Added five custom model training methods model_flt() and model evaluation methods model_performance() in the supervised class.
 
-三、修改ADBench包中的 run 模块：
+Modification of the run module in the ADBench package:
 
-3.1 为Pytorch 模型增加检测GPU设备的方法 get_pdevice() 
+3.1 Added a method to detect GPU devices for Pytorch models, get_pdevice().
 
-3.2 为Pytorch 模型增加张量处理的类：class PytrochData(object)
+3.2 Added a tensor processing class for Pytorch models: class PytorchData(object).
 
-3.3 修改 RunPipeline 类的初始化方法：当parallel=supervis模式时，在model_dict 列表中新增五种自定义的模型的名称
+3.3 Modified the initialization method of the RunPipeline class: when in parallel=supervised mode, added five custom model names to the model_dict list.
 
-3.4 修改 RunPipeline 类的run方法，在噪音数据产生之后，实例化PytrochData类 =PData,用于pytorch模型创建时的输入，并且在通过model_dict 字典进行循环时，通过model_name 判断，新增一个分支，用于创建我们自定义的模型，然后调用model_flt方法训练，调用model_performance方法评估。如下所示: # new model added 部分就是新增模型及训练，而# fit and test model 部分是原来的模型：
+3.4 Modified the run method of the RunPipeline class: after generating noisy data, an instance of the PytorchData class =PData is created for input during Pytorch model creation. Additionally, when looping through the model_dict dictionary, a new branch is added by using the model_name to create our custom model, then call the model_flt method for training and the model_performance method for evaluation. As shown below: the # new model added part is for adding and training the new model, while the # fit and test model part is for the original model:
 ```python
 if self.model_name in ['Pytorch_LSTM','Pytorch_GRU','keras_lstm_model','SVM_model','RandomForest_model']:
    # new model added
@@ -87,10 +87,11 @@ else:
    f'fitting time: {time_fit}, inference time: {time_inference}')
 ```
 
-经过上述修改，newADBench项目在ADBench代码基础上，保持原有结构和输出方式，实现了新增5种算法和原论文算法对比的实验要求。
-### 总结：
-1. ADBench代码完成机器学习后，会在result文件夹下生成四个csv文件，呈现3个数据集受到10%无关特征干扰的情况下10种算法的性能对比表，newADBench保持了相同的输出方式，把算法增加到15种.
+Following the above modifications, the newADBench project maintains the original structure and output methods of the ADBench codebase, implementing the experimental requirements for comparing 5 additional algorithms with the original paper's algorithms.
 
-2. 多种算法模型在不同的数据集上的验证结果表明，并不存在能广泛适用于各种数据集的通用异常检测模型。针对不同类型的数据集应选择适应能力好的算法，而newADBench可以作为选择异常检测算法时的工具。
+### Summary:
+After completing machine learning, the ADBench code generates four CSV files in the result folder, presenting a performance comparison table of 10 algorithms under the influence of 10% irrelevant feature interference across three datasets. newADBench maintains the same output method but increases the number of algorithms to 15.
 
-3. SVM和随机森林虽然比较传统，但从几个数据集的测试效果看，其性能并不比采用神经网络构造的模型差.如果考虑训练时间的因素，甚至可以说SVM和随机森林算法在全监督的数据集上表现更好，这充分说明了数学算法的威力。
+The validation results of various algorithm models on different datasets indicate that there is no universally applicable anomaly detection model that can broadly suit all types of datasets. For different types of datasets, algorithms with good adaptability should be chosen, and newADBench can serve as a tool for selecting anomaly detection algorithms.
+
+Although SVM and Random Forest are relatively traditional, their performance is not inferior to models constructed using neural networks, as seen from the testing effects on several datasets. Considering the factor of training time, it could even be said that SVM and Random Forest algorithms perform better on fully supervised datasets, fully demonstrating the power of mathematical algorithms.
