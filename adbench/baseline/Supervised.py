@@ -14,15 +14,37 @@ import torch.nn as nn
 import numpy as np
 from torch.utils.data import DataLoader, TensorDataset
 from torch.optim import Adam
+
+from keras.callbacks import LearningRateScheduler # Tensorflow 调整学习率的回调函数
 from keras.callbacks import Callback
 from keras.models import Sequential
 from keras.layers import Dense, LSTM
+
+from keras.wrappers.scikit_learn import KerasClassifier
+from sklearn.model_selection import RandomizedSearchCV
+from keras.optimizers import Adam as KerasAdam
+
 from ..datasets import data_generator
 import matplotlib
 matplotlib.use('TkAgg')
 from sklearn.metrics import roc_curve, auc, precision_score, recall_score, f1_score
 from matplotlib import pyplot as plt
+import math
 
+# keras LSTM 模型使用随机搜索来优化超参数，如果=cos,使用余弦退火算法动态重算学习率
+tslstm='random'
+random_search_result=None
+
+# 为Tensorflow LSTM算法设置余弦退火学习率回调函数
+def cosine_lr(epoch, lr_initial, lr_min, lr_max, n_cycles, epochs_per_cycle, total_epochs):
+    epoch_in_cycle = epoch % epochs_per_cycle
+    lr_range = lr_max - lr_min
+    progress = epoch_in_cycle / epochs_per_cycle
+
+    if epoch < total_epochs:
+        return lr_min + 0.5 * lr_range * (1 + math.cos(math.pi * progress))
+    else:
+        return lr_min
 
 class LSTMBinaryClassifier(nn.Module):
     #  LSTM model in Pytorch
@@ -125,6 +147,7 @@ def get_device(self, gpu_specific=False, Showinfo=False):
 class ModelFactory:
 
     def __init__(self, model_name, algorithm_type, epochs, PData):
+        self.tslstm='random' #keras LSTM 模型使用随机搜索来优化超参数，如果=cos,使用余弦退火算法动态重算学习率
         self.device = PData.device
         self.model_name = model_name
         self.algorithm_type = algorithm_type
@@ -145,6 +168,20 @@ class ModelFactory:
         else:
             self.algorithm_type = "N"
 
+    def build_Ts_LSTMmodel(self,optimizer='KerasAdam', units=32):
+        if optimizer == 'KerasAdam':
+            optimizer_instance = KerasAdam()
+        elif optimizer == 'rmsprop':
+            optimizer_instance = 'rmsprop'
+        model = Sequential()
+        model.add(
+            LSTM(units=units, return_sequences=True, input_shape=(self.PData.X_train.shape[1], 1)))
+        model.add(LSTM(50))
+        model.add(Dense(10, activation='relu'))
+        model.add(Dense(1, activation='sigmoid'))
+        model.compile(loss='binary_crossentropy', optimizer=optimizer_instance, metrics=['accuracy'])
+        return model
+
     def get_model(self):
         if self.model_name == 'Pytorch_model':
             X_train_tensor = self.PData.X_train_tensor.unsqueeze(1)
@@ -152,7 +189,6 @@ class ModelFactory:
                 self.model = LSTMBinaryClassifier(X_train_tensor.shape[2], 32)
             elif self.algorithm_type == 'GRU':
                 self.model = GRUBinaryClassifier(X_train_tensor.shape[2], 32)
-
             self.device = get_device(self,gpu_specific=True, Showinfo=False)
 
         elif self.model_name == 'keras_lstm_model':
@@ -167,17 +203,44 @@ class ModelFactory:
                 for i, gpu in enumerate(gpus):
                     print(f'GPU {i}: Name: {gpu.name}, Type: {gpu.device_type}')
             self.device = '/gpu:0' if tf.config.list_physical_devices('GPU') else '/cpu:0'
-
             time_callback = TimeHistory()
             with tf.device(self.device):
-                # 定义模型
-                lstm = Sequential()
-                lstm.add(LSTM(units=32, return_sequences=True, input_shape=(self.PData.X_train.shape[1], 1)))
-                lstm.add(LSTM(50))
-                lstm.add(Dense(10, activation='relu'))
-                lstm.add(Dense(1, activation='sigmoid'))
-                lstm.compile(loss='binary_crossentropy', optimizer='adam', metrics=['acc'])
-                self.model = lstm
+                if self.tslstm=='cos':
+                    # 定义模型
+                    lstm = Sequential()
+                    lstm.add(LSTM(units=32, return_sequences=True, input_shape=(self.PData.X_train.shape[1], 1)))
+                    lstm.add(LSTM(50))
+                    lstm.add(Dense(10, activation='relu'))
+                    lstm.add(Dense(1, activation='sigmoid'))
+                    lstm.compile(loss='binary_crossentropy', optimizer='KerasAdam', metrics=['acc'])
+                elif self.tslstm=='random':
+                    self.model = KerasClassifier(build_fn=self.build_Ts_LSTMmodel, verbose=1)
+                    # 定义超参数网格
+                    param_grid = {
+                        'units': [32, 64, 128],
+                        'optimizer': ['KerasAdam', 'rmsprop'],
+                        'batch_size': [32, 64],
+                        'epochs': [50, 100]
+                    }
+                    # 创建并运行随机搜索
+                    random_search = RandomizedSearchCV(estimator=self.model, param_distributions=param_grid, n_iter=10, cv=3, verbose=2)
+                    global random_search_result
+                    random_search_result = random_search.fit(self.PData.X_train, self.PData.y_train)
+
+                    # 打印最佳参数和性能指标
+                    print("Best Param: %f using %s" % (random_search_result.best_score_, random_search_result.best_params_))
+                    # 使用最佳参数重新训练模型
+                    model_params = random_search_result.best_params_.copy()
+                    print('@@@@@@@@@@@@@@@@@')
+                    print(random_search_result)
+
+                    # 最佳参数在random_search_result字典，定义模型的时候不需要epochs和batch_size,训练时才需要
+                    if 'epochs' in model_params:
+                        del model_params['epochs']
+                    if 'batch_size' in model_params:
+                        del model_params['batch_size']
+                    best_model = self.build_Ts_LSTMmodel(**model_params)
+                    self.model=best_model
 
         elif self.model_name == 'SVM_model':
             # 支持向量机
@@ -222,10 +285,10 @@ class supervised():
         from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score, roc_curve, auc
         results = []
         history = {'loss': [], 'val_loss': [], 'acc': [], 'val_acc': [], 'train_time': [], 'val_time': []}
-
         print(f"以下是我们自定义的模型:{self.model_name} data, params")
 
         if self.model_name in ['Pytorch_LSTM','Pytorch_GRU']:
+            import torch.optim.lr_scheduler as lr_scheduler  # 基于损失动态调整学习率的调度
             # X_train_tensor = self.PData.X_train_tensor.unsqueeze(1)
             self.model = self.model_dict[self.model_name]()
             # 加载训练集数据
@@ -233,8 +296,22 @@ class supervised():
             # 加载测试集数据
             test_loader = DataLoader(dataset=self.PData.test_dataset, batch_size=64, shuffle=False)
             self.model.to(self.device)
+            # pytorch 通过优化器调参，设置学习率lr的初始值
             optimizer = Adam(self.model.parameters(), lr=0.001)
+            # 损失函数
             criterion = nn.BCELoss()
+            # 根据损失动态调整学习率
+            scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.05, patience=10)
+            # 训练开始之前先生成模型的结构图
+            inputs, labels = next(iter(train_loader))
+            inputs, labels = inputs.to(self.device), labels.to(self.device)
+            optimizer.zero_grad()
+            outputs = self.model(inputs)
+            loss = criterion(outputs, labels)
+            # 使用make_dot生成模型结构图
+            from torchviz import make_dot
+            file_name = f"model_{self.model_name}"  # 动态生成m模型图片文件名
+            make_dot(loss, params=dict(self.model.named_parameters())).render(file_name, format="png")
 
             for epoch in range(self.epochs):
                 start_time_epoch = time.time()
@@ -287,6 +364,9 @@ class supervised():
                       f'TrainTime: {time_fit:.4f}s, '
                       f'Val Time: {time_inference:.4f}s')
 
+                # 根据损失动态调整学习率
+                scheduler.step(val_loss_avg)
+
             total_train_time = sum(history['train_time'])
             total_val_time = sum(history['val_time'])
             self.time_fit = total_train_time
@@ -309,8 +389,8 @@ class supervised():
                 y_pred_np = y_pred.cpu().numpy().flatten()
                 self.y_test_pred = y_pred_np
 
-                self.y_test_pred = y_pred.cpu().numpy().flatten()  # 保存测试集的预测分类结果
-                y_train_score_np = y_train_score.cpu().numpy()  # 保存训练集的预测概率
+                self.y_test_pred = y_pred.cpu().numpy().flatten()
+                y_train_score_np = y_train_score.cpu().numpy()
                 y_test_score_np = y_test_score.cpu().numpy()
 
             y_test_np = self.PData.y_test_tensor.cpu().numpy().flatten()
@@ -325,39 +405,63 @@ class supervised():
             y_test_score_np = y_test_score.cpu().numpy()
             score_test = y_test_score
 
-            # 确保y_true、y_score是NumPy数组，并且已经从CUDA移动到CPU
+            # 确保 y_true、y_score是NumPy数组，并且已经从CUDA移动到CPU
             # y_true_np = data['y_test'].cpu().numpy() if isinstance(data['y_test'], torch.Tensor) else data['y_test']
+
             y_true_np = self.PData.y_test_tensor.cpu().numpy() if isinstance(self.PData.y_test_tensor,
                                                                              torch.Tensor) else self.PData.y_test
             y_score_np = score_test.cpu().numpy() if isinstance(score_test, torch.Tensor) else score_test
 
             # 调用metric函数，传入NumPy数组
             self.metrics = data_generator.metric(self,y_true=y_true_np, y_score=y_score_np, pos_label=1)
-            results.append([self.params, self.model_name, self.metrics, total_train_time, total_val_time])
+            results.append([self.params, self.model_name, self.metrics, total_train_time, total_val_time]                                                               8i8i8i8i8i8i8i` )
             #show_history(history)
             print(
                 f"\nModel: {self.model_name}, AUC-ROC: {self.metrics['aucroc']}, AUC-PR: {self.metrics['aucpr']}")
 
-
         elif self.model_name == 'keras_lstm_model':
+            time_callback = TimeHistory()
             self.model = self.model_dict[self.model_name]()
             from keras.utils import plot_model
-            time_callback = TimeHistory()
-            hist = self.model.fit(self.PData.X_train, self.PData.y_train,
-                             validation_data=(self.PData.X_test, self.PData.y_test),
-                             epochs=self.epochs, batch_size=64, callbacks=[time_callback])
+            if tslstm=='cos':
+                total_epochs = self.epochs
+                epochs_per_cycle = total_epochs // 5 # 余弦退火学习率调整为设置为 4个周期
+                lr_scheduler = LearningRateScheduler(
+                       lambda epoch: cosine_lr(epoch, lr_initial=0.001, lr_min=0.001, lr_max=0.01, n_cycles=2,
+                                                epochs_per_cycle=epochs_per_cycle, total_epochs=total_epochs),verbose=1)
+                hist = self.model.fit(self.PData.X_train, self.PData.y_train,
+                                     validation_data=(self.PData.X_test, self.PData.y_test),
+                                     epochs=self.epochs, batch_size=32, callbacks=[time_callback,lr_scheduler])
+                score = self.model.evaluate(self.PData.X_test, self.PData.y_test, batch_size=32)
+            elif tslstm=='random':
+                # 现在使用最佳参数和额外的回调函数来训练模型
+                print('oooooooooooooooooo')
+                print(random_search_result)
+                if random_search_result:
+                    hist = self.model.fit(self.PData.X_train, self.PData.y_train,
+                                          epochs=random_search_result.best_params_['epochs'],
+                                          batch_size=random_search_result.best_params_['batch_size'],
+                                          verbose=1,
+                                          callbacks=[time_callback],
+                                          validation_data=(self.PData.X_test, self.PData.y_test))
+
+                    score = self.model.evaluate(self.PData.X_test, self.PData.y_test,
+                                               batch_size=random_search_result.best_params_['batch_size'])
+
             history = {
                 'loss': hist.history['loss'],
                 'val_loss': hist.history['val_loss'],
-                'acc': hist.history['acc'],
-                'val_acc': hist.history['val_acc'],
+                'acc': hist.history['accuracy'],
+                'val_acc': hist.history['val_accuracy'],
                 'train_time': time_callback.train_times,
-                'val_time': time_callback.val_times,
+                'val_time': time_callback.val_times
             }
 
-            score = self.model.evaluate(self.PData.X_test, self.PData.y_test, batch_size=128)
             total_train_time = sum(time_callback.train_times)
             total_val_time = sum(time_callback.val_times)
+
+            self.PData.X_train = np.nan_to_num(self.PData.X_train)
+            self.PData.X_test = np.nan_to_num(self.PData.X_test)
 
             y_train_score = self.model.predict(self.PData.X_train).ravel()
             self.y_train_pred_proba = y_train_score
@@ -369,16 +473,11 @@ class supervised():
             results.append([self.params, 'keras_lstm', self.metrics, total_train_time, total_val_time])
             print('----- 生成模型结构图model.png -----')
             self.model.summary()
-            plot_model(self.model, to_file='model.png')
-
+            plot_model(self.model, to_file='keras_LSTM_model.png')
             # show_history(history)
-
             print(f"Model: keras_LSTM, AUC-ROC: {self.metrics['aucroc']}, AUC-PR: {self.metrics['aucpr']}")
-
             self.time_fit = total_train_time
             self.time_inference = total_val_time
-
-            # return y_train_score, y_test_score, metrics, results, history, total_train_time, total_val_time
 
         elif self.model_name in ['RandomForest_model','SVM_model']:
             self.model = self.model_dict[self.model_name]()

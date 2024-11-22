@@ -1,0 +1,27 @@
+import matplotlib.pyplot as plt
+
+models = ['LR', 'NB', 'SVM', 'MLP', 'RF', 'LGB', 'XGB', 'CatB', 'Pytorch_LSTM', 'Pytorch_GRU', 'keras_lstm_model', 'SVM_model', 'RandomForest_model', 'ResNet', 'FTTransformer']
+datasets = ['25_musk', '3_backdoor', '9_census']
+
+
+highlighted_models = ['Pytorch_LSTM', 'Pytorch_GRU', 'keras_lstm_model', 'SVM_model', 'RandomForest_model']
+
+inference_time_data = [
+    [0.0009570121765136719, 0.002999544143676758, 0.043007612228393555, 0.0018744468688964844, 0.015325307846069336, 0.0030455589294433594, 0.006064414978027344, 0.03876662254333496, 5.702974796295166, 4.853753328323364, 682.6696622371674, 0.005003690719604492, 0.030321598052978516, 0.014543771743774414, 0.4264516830444336],
+    [0.0023834705352783203, 0.01220083236694336, 0.4407346248626709, 0.007667064666748047, 0.08453845977783203, 0.006114482879638672, 0.018043041229248047, 0.3259148597717285, 24.667496919631958, 15.440995454788208, 2954.6051557064056, 0.048686981201171875, 0.06541323661804199, 0.04159736633300781, 2.9674742221832275],
+    [0.003568887710571289, 0.02958202362060547, 1.9939227104187012, 0.008996248245239258, 0.0616152286529541, 0.009150028228759766, 0.03446555137634277, 0.35742688179016113, 17.654895305633545, 13.63028335571289, 9256.53019952774, 0.7364664077758789, 0.09711694717407227, 0.0420222282409668, 15.062650918960571]
+]
+
+plt.figure(figsize=(12, 6))
+for i in range(len(datasets)):
+    plt.plot(models, inference_time_data[i], marker='o', label=datasets[i])
+
+legend_labels = [f'\\textcolor{{red}}{{{model}}}' if model in highlighted_models else model for model in datasets]
+
+plt.title('Inference Time Comparison')
+plt.xlabel('Models')
+plt.ylabel('Inference Time (seconds)')
+plt.xticks(rotation=45)
+plt.legend(labels=legend_labels)
+plt.tight_layout()
+plt.show()
